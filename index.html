@@ -10,11 +10,27 @@
   <!-- Bootstrap CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+
+  <!-- Quick & dirty greyed out style -->
+  <style>
+    .form-disabled {
+      opacity: 0.5;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .loading {
+      display: flex !important;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
+
 </head>
 
 
 <body class="bg-light">
-<script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 
   <div class="container py-5">
     <div class="row justify-content-center">
@@ -237,13 +253,13 @@
         select.appendChild(option);
       });
 
-        const tomSelect = new TomSelect(select, {
+      const tomSelect = new TomSelect(select, {
         create: false,
         maxOptions: 500,
         searchField: ['text'],
         placeholder: 'Search drink...',
 
-        onChange: function(value) {
+        onChange: function (value) {
           calculateTotal();
 
           if (value && !drinks[value]) {
@@ -301,37 +317,40 @@
     }
     const form = document.getElementById("frintForm");
 
+
+
     form.addEventListener("submit", async (e) => {
-      console.log('submit fired')
+      console.log("submit fired");
       e.preventDefault();
+
+      // Disable form
+      form.classList.add("form-disabled");
+      document.getElementById("sending").classList.remove("d-none");
 
       let nameValue = document.getElementById("fnameInput").value;
       let phoneValue = document.getElementById("fPhoneInput").value;
       let emailValue = document.getElementById("fMailInput").value;
+
       const items = [];
 
-      document
-        .querySelectorAll(".drink-row")
-        .forEach(row => {
+      document.querySelectorAll(".drink-row").forEach(row => {
 
-          const drink =
-            row.querySelector(".drink-input").value;
+        const drink = row.querySelector(".drink-input").value;
+        const amount = Number(row.querySelector(".amount-input").value);
 
-          const amount =
-            Number(
-              row.querySelector(".amount-input").value
-            );
+        if (!drinks[drink]) {
+          alert("Please select a valid drink from the dropdown.");
+          return;
+        }
 
-          if (!drinks[drink]) {
-            alert("Please select a valid drink from the dropdown.");
-            return;
-          }
-          items.push({
-            drink,
-            amount,
-            price: drinks[drink] || 0
-          });
+        items.push({
+          drink,
+          amount,
+          price: drinks[drink]
         });
+
+      });
+
 
       const data = {
         name: nameValue,
@@ -340,11 +359,14 @@
         items
       };
 
+
       for (const key in data) {
         setCookie(key, data[key]);
       }
 
+
       try {
+
         const response = await fetch(
           "https://script.google.com/macros/s/AKfycbwwXyTm8bifPnHNmwt8eulF8rrljmNgmPfYUqp-SenwF9pawF0jZyntlndqqSb_vaIl/exec",
           {
@@ -353,21 +375,27 @@
           }
         );
 
-        document.getElementById("sending").style.visibility = "visible";
+
         const result = await response.json();
+
 
         if (result.success) {
           alert("Form submitted!");
-          form.reset();
+          // form.reset(); This confused ome people. Commenting it out
         } else {
           alert("Error: " + result.error);
         }
-        document.getElementById("sending").style.visibility = "visible";
+
+
       } catch (err) {
         alert("Network error: " + err.message);
+      } finally {
+
+        // Always unlock the form
+        form.classList.remove("form-disabled");
+        document.getElementById("sending").classList.add("d-none");
       }
     });
-
 
     function setCookie(cookieName, cookieValuue) {
       const d = new Date();
